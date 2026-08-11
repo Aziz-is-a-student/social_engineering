@@ -1,0 +1,641 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Human Firewall — тест по социальной инженерии</title>
+<style>
+:root{
+  --bg:#08101f; --panel:#111a2d; --panel2:#17233a; --text:#f6f8ff; --muted:#9eabc8;
+  --line:rgba(255,255,255,.10); --a:#7d9dff; --b:#a67cff; --ok:#45d99a; --bad:#ff6f7d; --warn:#ffc857;
+}
+*{box-sizing:border-box}
+body{
+  margin:0; min-height:100vh; color:var(--text);
+  font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  background:
+    radial-gradient(circle at 12% 10%,rgba(125,157,255,.16),transparent 28%),
+    radial-gradient(circle at 88% 8%,rgba(166,124,255,.12),transparent 28%),
+    var(--bg);
+}
+.wrap{width:min(940px,92vw);margin:auto;padding:28px 0 56px}
+.top{display:flex;justify-content:space-between;gap:12px;align-items:center;margin-bottom:20px}
+.brand{font-weight:900}.chip{border:1px solid var(--line);border-radius:999px;padding:8px 12px;color:var(--muted);font-size:13px;background:rgba(255,255,255,.04)}
+.panel{background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.025));border:1px solid var(--line);border-radius:24px;box-shadow:0 24px 80px rgba(0,0,0,.22)}
+.hero{padding:42px}
+.eyebrow{font-size:12px;text-transform:uppercase;letter-spacing:.13em;font-weight:900;color:#afbcff;margin-bottom:10px}
+h1{font-size:clamp(38px,7vw,68px);line-height:.96;letter-spacing:-2.3px;margin:0 0 16px}
+h2{font-size:29px;margin:0 0 12px}
+h3{margin:0}
+p{color:var(--muted);line-height:1.62}
+.hero p{font-size:18px;max-width:700px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:25px 0}
+.stat{padding:16px;border:1px solid var(--line);border-radius:16px;background:rgba(255,255,255,.04)}
+.stat b{display:block;font-size:22px}.stat span{font-size:12px;color:var(--muted)}
+.heroActions,.footerActions{display:flex;gap:10px;flex-wrap:wrap}
+.btn{border:0;border-radius:14px;padding:14px 19px;font-weight:850;font-size:15px;cursor:pointer;transition:.17s}
+.btn:hover{transform:translateY(-1px)}
+.primary{color:white;background:linear-gradient(135deg,var(--a),var(--b))}
+.ghost{color:var(--text);background:rgba(255,255,255,.06);border:1px solid var(--line)}
+.danger{color:#ffd9dd;background:rgba(255,111,125,.08);border:1px solid rgba(255,111,125,.28)}
+#quiz,#result,#interactive,#interactiveResult{display:none}
+.sectionControls{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:12px}
+.progressMeta{display:flex;justify-content:space-between;color:var(--muted);font-size:13px;margin:0 2px 8px}
+.progress{height:9px;border-radius:999px;background:rgba(255,255,255,.06);overflow:hidden}
+.progress>div{height:100%;width:0;background:linear-gradient(90deg,var(--a),var(--b));transition:.25s}
+.card{padding:29px;margin-top:18px}
+.qhead{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:12px}
+.category{font-size:12px;text-transform:uppercase;letter-spacing:.12em;font-weight:900;color:#afbcff}
+.diff{font-size:11px;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:5px 8px}
+.question{font-size:23px;line-height:1.36;font-weight:780;margin-bottom:20px}
+.options{display:grid;gap:10px}
+.option{
+  width:100%;text-align:left;padding:15px 16px;border:1px solid var(--line);border-radius:15px;
+  background:rgba(255,255,255,.045);color:var(--text);font-size:15px;line-height:1.45;cursor:pointer;transition:.16s
+}
+.option:hover{background:rgba(125,157,255,.08);border-color:rgba(125,157,255,.48)}
+.option.correct{background:rgba(69,217,154,.11);border-color:rgba(69,217,154,.56)}
+.option.wrong{background:rgba(255,111,125,.10);border-color:rgba(255,111,125,.56)}
+.review{display:none;margin-top:18px}
+.reviewBox{border:1px solid var(--line);border-radius:16px;background:rgba(255,255,255,.035);padding:16px;margin-top:10px}
+.reviewTitle{font-weight:900;margin-bottom:6px}
+.goodTitle{color:#80efb8}.badTitle{color:#ff9aa5}
+.reviewBox p{margin:0;font-size:14px}
+.wrongList{display:grid;gap:9px;margin-top:10px}
+.wrongItem{padding:12px;border-radius:13px;background:rgba(255,255,255,.035);border:1px solid var(--line);color:var(--muted);font-size:13px;line-height:1.45}
+.actions{display:flex;justify-content:flex-end;margin-top:18px}
+.result{padding:32px}
+.score{font-size:72px;font-weight:950;letter-spacing:-3px;margin:4px 0}
+.verdict{font-size:25px;font-weight:900}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:18px}
+.mini{padding:18px;border:1px solid var(--line);border-radius:17px;background:rgba(255,255,255,.035)}
+.mini p{margin-bottom:0}
+.bars{display:grid;gap:12px;margin-top:18px}
+.barRow{display:grid;grid-template-columns:190px 1fr 45px;gap:10px;align-items:center}
+.barLabel,.barPct{font-size:13px;color:var(--muted)}
+.barTrack{height:10px;border-radius:999px;background:rgba(255,255,255,.07);overflow:hidden}
+.barFill{height:100%;background:linear-gradient(90deg,var(--a),var(--b));border-radius:999px}
+.finalRule{margin-top:22px;padding:20px;border-radius:17px;border:1px solid rgba(69,217,154,.3);background:rgba(69,217,154,.06)}
+.finalRule b{font-size:19px}
+.small{font-size:12px;color:var(--muted);margin-top:15px}
+
+/* Interactive */
+.mailShell{background:#f7f8fb;color:#1d2433;border-radius:18px;overflow:hidden;border:1px solid #d9dfeb;box-shadow:0 18px 50px rgba(0,0,0,.18)}
+.mailTop{background:#eef2f8;padding:14px 18px;font-weight:800;border-bottom:1px solid #dbe2ee}
+.mailHeader{padding:18px;border-bottom:1px solid #e1e6ef}
+.mailRow{display:flex;gap:8px;align-items:flex-start;margin:6px 0;font-size:14px}
+.mailLabel{width:54px;color:#67748a}
+.mailBody{padding:22px;font-size:16px;line-height:1.62}
+.mailBody p{color:#2b3447}
+.fakeBtn{display:inline-block;background:#316dff;color:white;padding:12px 18px;border-radius:8px;font-weight:800;margin:8px 0}
+.hotspot{
+  border-radius:7px;padding:2px 4px;cursor:pointer;transition:.15s;
+  outline:1px dashed transparent;
+}
+.hotspot:hover{background:#fff0b7;outline-color:#e7bd48}
+.hotspot.found{background:#d9f7e8;outline-color:#52b989}
+.hotspot.miss{background:#ffe4e7;outline-color:#e16978}
+.interactiveHelp{margin:16px 0;color:var(--muted)}
+.counter{font-weight:900;color:#dfe5ff}
+.findings{display:grid;gap:10px;margin-top:16px}
+.finding{padding:13px 14px;border:1px solid var(--line);border-radius:14px;background:rgba(255,255,255,.04)}
+.finding b{display:block;margin-bottom:4px}
+.finding span{font-size:13px;color:var(--muted);line-height:1.45}
+.legend{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.legend span{font-size:12px;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:6px 9px}
+@media(max-width:700px){
+  .hero,.card,.result{padding:22px}.stats,.grid{grid-template-columns:1fr}
+  .top{align-items:flex-start;flex-direction:column}.question{font-size:20px}.score{font-size:56px}
+  .barRow{grid-template-columns:1fr}.barPct{text-align:left}
+  .sectionControls{align-items:flex-start;flex-direction:column}
+}
+@media print{
+ body{background:#fff;color:#111}.top,#start,#quiz,#interactive,.footerActions,.sectionControls{display:none!important}
+ #result,#interactiveResult{display:block!important}.panel,.mini,.finalRule{background:#fff;box-shadow:none;border:1px solid #ccc}
+ p,.barLabel,.barPct,.small{color:#444}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <div class="brand">🛡️ HUMAN FIREWALL</div>
+    <div class="chip">Тест + интерактив по социальной инженерии</div>
+  </div>
+
+  <section id="start" class="panel hero">
+    <div class="eyebrow">Интерактивный тренажёр</div>
+    <h1>Сможете ли вы распознать социальную инженерию?</h1>
+    <p>Можно пройти короткий тест на 5–7 минут с подробным разбором каждого ответа или сразу открыть отдельный интерактив «Найди красные флаги».</p>
+    <div class="stats">
+      <div class="stat"><b>10</b><span>реалистичных ситуаций</span></div>
+      <div class="stat"><b>5–7 мин</b><span>основной тест</span></div>
+      <div class="stat"><b>1</b><span>отдельный интерактив</span></div>
+    </div>
+    <div class="heroActions">
+      <button class="btn primary" onclick="startQuiz()">Пройти тест →</button>
+      <button class="btn ghost" onclick="startInteractive()">Сразу к интерактиву 🔍</button>
+    </div>
+  </section>
+
+  <section id="quiz">
+    <div class="sectionControls">
+      <div class="chip">Основной тест</div>
+      <button class="btn danger" onclick="restartAll()">↻ Рестарт</button>
+    </div>
+
+    <div class="progressMeta"><span id="progressText"></span><span id="scoreText"></span></div>
+    <div class="progress"><div id="progressBar"></div></div>
+
+    <div class="panel card">
+      <div class="qhead">
+        <div id="category" class="category"></div>
+        <div id="difficulty" class="diff"></div>
+      </div>
+      <div id="question" class="question"></div>
+      <div id="options" class="options"></div>
+
+      <div id="review" class="review">
+        <div class="reviewBox">
+          <div class="reviewTitle goodTitle">✓ Почему это лучший ответ</div>
+          <p id="correctWhy"></p>
+        </div>
+        <div class="reviewBox">
+          <div class="reviewTitle badTitle">Почему остальные варианты хуже</div>
+          <div id="wrongList" class="wrongList"></div>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button id="nextBtn" class="btn primary" style="display:none" onclick="nextQuestion()">Дальше →</button>
+      </div>
+    </div>
+  </section>
+
+  <section id="interactive">
+    <div class="sectionControls">
+      <div>
+        <div class="chip">🔍 Интерактив: «Найди красные флаги»</div>
+        <div class="interactiveHelp">Найдите в письме <b>6 элементов</b>, которые должны заставить вас остановиться и проверить запрос. Нажимайте прямо на подозрительные места.</div>
+      </div>
+      <button class="btn danger" onclick="restartAll()">↻ Рестарт</button>
+    </div>
+
+    <div class="panel card">
+      <div class="qhead">
+        <div class="category">Письмо от «IT-службы»</div>
+        <div class="diff"><span class="counter" id="foundCounter">0 / 6</span></div>
+      </div>
+
+      <div class="mailShell">
+        <div class="mailTop">Входящие · Корпоративная почта</div>
+        <div class="mailHeader">
+          <div class="mailRow"><div class="mailLabel">От:</div><div><span class="hotspot" data-key="sender">IT Support &lt;support@univeristy-help.com&gt;</span></div></div>
+          <div class="mailRow"><div class="mailLabel">Кому:</div><div>Вы</div></div>
+          <div class="mailRow"><div class="mailLabel">Тема:</div><div><span class="hotspot" data-key="subject">СРОЧНО: подтверждение корпоративной учётной записи</span></div></div>
+        </div>
+
+        <div class="mailBody">
+          <p>Добрый день, Александр.</p>
+          <p>
+            В связи с переходом университета на новую систему Microsoft 365 необходимо
+            <span class="hotspot" data-key="reauth">повторно подтвердить вашу учётную запись</span>.
+          </p>
+
+          <p>
+            Если подтверждение не будет выполнено
+            <span class="hotspot" data-key="deadline">до 18:00 сегодня</span>,
+            <span class="hotspot" data-key="threat">доступ к корпоративной почте будет временно заблокирован</span>.
+          </p>
+
+          <div><span class="hotspot fakeBtn" data-key="button">Подтвердить учётную запись</span></div>
+
+          <p style="margin-top:20px">
+            По вопросам обращайтесь в техническую поддержку.<br>
+            IT Service Desk
+          </p>
+
+          <p style="font-size:13px;color:#6f7b90">
+            <span class="hotspot" data-key="oddcontext">Это автоматическое сообщение. Не отвечайте на него.</span>
+          </p>
+        </div>
+      </div>
+
+      <div class="legend">
+        <span>Подсказка: не каждый необычный элемент — доказательство атаки</span>
+        <span>Цель — заметить повод для проверки</span>
+      </div>
+
+      <div id="findings" class="findings"></div>
+
+      <div class="actions">
+        <button id="finishInteractiveBtn" class="btn primary" onclick="finishInteractive()" disabled>Завершить интерактив →</button>
+      </div>
+    </div>
+  </section>
+
+  <section id="interactiveResult" class="panel result">
+    <div class="eyebrow">Интерактив завершён</div>
+    <div id="interactiveScore" class="score"></div>
+    <div id="interactiveVerdict" class="verdict"></div>
+    <p id="interactiveText"></p>
+
+    <div class="mini" style="margin-top:18px">
+      <div class="eyebrow">Что здесь происходило</div>
+      <p>Письмо не нужно «угадывать» как фишинговое по одному признаку. Важна комбинация: подозрительный домен, срочность, угроза блокировки, просьба повторно войти и кнопка, ведущая в неизвестный канал.</p>
+    </div>
+
+    <div class="finalRule">
+      <b>Лучшее действие</b>
+      <p>Не использовать ссылку из письма. Самостоятельно открыть официальный портал или связаться с IT-службой по известному контакту.</p>
+    </div>
+
+    <div class="footerActions">
+      <button class="btn primary" onclick="startQuizFromResult()">Пройти теперь тест →</button>
+      <button class="btn ghost" onclick="restartAll()">↻ На главную</button>
+    </div>
+  </section>
+
+  <section id="result" class="panel result">
+    <div class="eyebrow">Ваш профиль устойчивости</div>
+    <div id="finalScore" class="score"></div>
+    <div id="verdict" class="verdict"></div>
+    <p id="verdictText"></p>
+
+    <div class="grid">
+      <div class="mini">
+        <div class="eyebrow">Сильная сторона</div>
+        <h3 id="strong"></h3>
+        <p id="strongText"></p>
+      </div>
+      <div class="mini">
+        <div class="eyebrow">Главный риск</div>
+        <h3 id="weak"></h3>
+        <p id="weakText"></p>
+      </div>
+    </div>
+
+    <div class="mini" style="margin-top:14px">
+      <div class="eyebrow">По направлениям</div>
+      <div id="bars" class="bars"></div>
+    </div>
+
+    <div class="finalRule">
+      <b>Три действия, которые дают максимум защиты</b>
+      <p>1) остановиться, если вас торопят; 2) проверить запрос через другой канал; 3) не передавать пароль, MFA-коды и доступ к учётной записи.</p>
+    </div>
+
+    <div class="footerActions">
+      <button class="btn primary" onclick="startInteractive()">Перейти к интерактиву 🔍</button>
+      <button class="btn ghost" onclick="restartAll()">↻ На главную</button>
+    </div>
+    <div class="small">Учебный тренажёр. Он оценивает решения в конкретных сценариях, а не личные качества человека.</div>
+  </section>
+</div>
+
+<script>
+const categories={
+  phishing:"Фишинг и ссылки",
+  identity:"Подмена личности",
+  pressure:"Срочность и давление",
+  access:"Пароли и MFA",
+  physical:"Физическая безопасность",
+  ai:"ИИ и дипфейки"
+};
+
+const questions=[
+{
+ c:"phishing", d:"Средне",
+ q:"Вам приходит письмо от IT-службы университета: «Из-за обновления Microsoft 365 нужно повторно подтвердить учётную запись до 18:00». Что делать?",
+ a:[
+  "Перейти по ссылке и внимательно проверить адрес страницы",
+  "Ответить на письмо и спросить, действительно ли это IT-служба",
+  "Самостоятельно открыть официальный портал университета или связаться с IT по известному контакту",
+  "Переслать письмо коллеге и спросить, приходило ли ему такое"
+ ],
+ ok:2,
+ why:"Самый надёжный вариант — выйти из подозрительного канала и проверить информацию независимо: через официальный сайт, внутренний портал или известный контакт IT.",
+ wrong:[
+  "A — даже похожий адрес можно не заметить в спешке; сама ссылка уже пришла из подозрительного сообщения.",
+  "B — если аккаунт отправителя скомпрометирован, ответ попадёт тому же злоумышленнику.",
+  "D — коллега может получить такое же мошенническое письмо и подтвердить его ошибочно."
+ ]
+},
+{
+ c:"identity", d:"Легко",
+ q:"Заведующий пишет с нового номера: «Я на совещании. Срочно купите несколько подарочных сертификатов, потом объясню». Что безопаснее?",
+ a:[
+  "Выполнить просьбу — это руководитель",
+  "Позвонить заведующему по сохранённому номеру и подтвердить просьбу",
+  "Попросить прислать фотографию с совещания",
+  "Купить только один сертификат для проверки"
+ ],
+ ok:1,
+ why:"Необычная финансовая просьба должна подтверждаться через уже известный канал связи. Это быстро разрушает подмену личности.",
+ wrong:[
+  "A — должность и фотография профиля не доказывают личность.",
+  "C — фото тоже можно украсть или сгенерировать.",
+  "D — даже маленькая сумма всё равно означает, что манипуляция сработала."
+ ]
+},
+{
+ c:"access", d:"Средне",
+ q:"На телефон подряд приходят запросы MFA на подтверждение входа, хотя вы сами не входите. Ваше действие?",
+ a:[
+  "Подтвердить один раз, чтобы уведомления прекратились",
+  "Просто игнорировать",
+  "Отклонить запросы, сменить пароль и сообщить IT/поддержке",
+  "Отключить MFA"
+ ],
+ ok:2,
+ why:"Это похоже на MFA fatigue: злоумышленник надеется, что пользователь устанет и случайно подтвердит вход. Нужна реакция как на возможную компрометацию.",
+ wrong:[
+  "A — именно этого и ждёт атакующий.",
+  "B — игнорирование не устраняет возможную утечку пароля.",
+  "D — отключение MFA убирает дополнительный слой защиты."
+ ]
+},
+{
+ c:"phishing", d:"Средне",
+ q:"Студент пишет: «Не могу загрузить работу в LMS, отправляю архивом, дедлайн сегодня». Во вложении ZIP-файл. Что лучше?",
+ a:[
+  "Открыть — студенту нужно помочь",
+  "Открыть на телефоне, там безопаснее",
+  "Попросить загрузить работу через разрешённое хранилище или прислать безопасный формат",
+  "Переименовать ZIP в PDF"
+ ],
+ ok:2,
+ why:"Неизвестные архивы не стоит открывать из-за срочности. Лучше перевести передачу файла в утверждённый канал.",
+ wrong:[
+  "A — желание помочь не делает вложение безопасным.",
+  "B — телефон не превращает подозрительное вложение в доверенное.",
+  "D — изменение имени файла не меняет его содержимое."
+ ]
+},
+{
+ c:"pressure", d:"Средне",
+ q:"Приходит письмо: «Ваша заявка на международный грант предварительно одобрена. Подтвердите данные до конца дня, иначе место перейдёт другому участнику». Что делать?",
+ a:[
+  "Заполнить форму — шанс терять нельзя",
+  "Проверить грант и заявку через официальный сайт или известного организатора",
+  "Сначала отправить форму коллеге",
+  "Заполнить только ФИО и телефон"
+ ],
+ ok:1,
+ why:"Здесь одновременно работают выгода и дефицит времени. Правильный ответ — не спорить с содержанием письма, а проверить сам факт гранта через независимый источник.",
+ wrong:[
+  "A — именно страх упустить возможность заставляет действовать быстрее.",
+  "C — пересылка не подтверждает подлинность.",
+  "D — даже частичные персональные данные могут использоваться дальше."
+ ]
+},
+{
+ c:"physical", d:"Легко",
+ q:"На двери аудитории появился QR-код «Новое расписание занятий». Как поступить безопаснее?",
+ a:[
+  "Отсканировать — QR-коды безопаснее обычных ссылок",
+  "Проверить расписание через официальный сайт или приложение",
+  "Сфотографировать QR и открыть позже",
+  "Открыть его в режиме инкогнито"
+ ],
+ ok:1,
+ why:"QR-код — это лишь другой способ передать ссылку. Если информация доступна через официальный канал, безопаснее использовать его.",
+ wrong:[
+  "A — QR может вести на любой адрес.",
+  "C — время открытия не меняет источник ссылки.",
+  "D — инкогнито не защищает от фишинговой страницы."
+ ]
+},
+{
+ c:"identity", d:"Сложно",
+ q:"Коллега пишет в привычном стиле и просит срочно отправить служебный документ. Аккаунт, аватар и история переписки выглядят настоящими. Что лучше сделать?",
+ a:[
+  "Отправить — аккаунт выглядит настоящим",
+  "Проверить необычную просьбу через второй канал: звонком или лично",
+  "Попросить поставить реакцию на сообщение",
+  "Задать личный вопрос, ответ на который знает коллега"
+ ],
+ ok:1,
+ why:"Даже настоящий аккаунт может быть захвачен. Когда просьба чувствительная или необычная, важна независимая проверка.",
+ wrong:[
+  "A — внешний вид аккаунта не показывает, кто сейчас им управляет.",
+  "C — реакцию может поставить тот, кто контролирует аккаунт.",
+  "D — личные факты могут быть известны из переписки или открытых источников."
+ ]
+},
+{
+ c:"ai", d:"Сложно",
+ q:"Вы получаете короткое видеосообщение от руководителя. Лицо и голос выглядят убедительно, он просит срочно обойти обычную процедуру оплаты. Что делать?",
+ a:[
+  "Выполнить — видео сильнее подтверждает личность, чем текст",
+  "Попросить прислать ещё одно видео",
+  "Следовать обычной процедуре подтверждения и проверить запрос вторым каналом",
+  "Сделать частичный перевод"
+ ],
+ ok:2,
+ why:"В эпоху генеративного ИИ голос и видео уже нельзя считать достаточным доказательством личности. Надёжнее процесс: второй канал и установленная процедура.",
+ wrong:[
+  "A — реалистичный медиа-контент можно подделать.",
+  "B — второе видео тоже может быть сгенерировано.",
+  "D — частичная операция всё равно нарушает процедуру и подтверждает, что давление сработало."
+ ]
+},
+{
+ c:"pressure", d:"Сложно",
+ q:"Письмо от имени руководства заканчивается фразой: «Никому пока не сообщайте, вопрос конфиденциальный». Почему это особенно важно заметить?",
+ a:[
+  "Потому что конфиденциальные письма почти всегда мошеннические",
+  "Потому что злоумышленник может пытаться изолировать вас от людей, которые помогли бы проверить запрос",
+  "Потому что руководство не имеет права просить о конфиденциальности",
+  "Потому что такие письма всегда содержат вирус"
+ ],
+ ok:1,
+ why:"Изоляция снижает шанс, что вы посоветуетесь с коллегой или проверите запрос. Это сильный психологический приём, особенно вместе со срочностью и авторитетом.",
+ wrong:[
+  "A — сама конфиденциальность не доказывает мошенничество.",
+  "C — реальные рабочие задачи тоже могут быть конфиденциальными.",
+  "D — социальная инженерия может вообще не содержать вредоносных файлов."
+ ]
+},
+{
+ c:"access", d:"Сложно",
+ q:"Вы уже ввели пароль на подозрительной странице и через несколько секунд поняли ошибку. Что делать в первую очередь?",
+ a:[
+  "Закрыть страницу — пароль ещё могли не успеть получить",
+  "Очистить историю браузера",
+  "Через официальный сайт сразу сменить пароль, завершить активные сессии и проверить MFA",
+  "Перезагрузить устройство"
+ ],
+ ok:2,
+ why:"Если пароль уже введён, нужно считать его раскрытым. Быстрая смена пароля и завершение сессий уменьшают окно для захвата аккаунта.",
+ wrong:[
+  "A — данные могли быть отправлены сразу после ввода.",
+  "B — очистка истории не отзывает уже переданный пароль.",
+  "D — перезагрузка не меняет учётные данные."
+ ]
+}
+];
+
+let i=0,score=0,answered=false;
+let catScore={},catTotal={};
+function resetScores(){
+  i=0;score=0;answered=false;
+  catScore={};catTotal={};
+  Object.keys(categories).forEach(k=>{catScore[k]=0;catTotal[k]=0});
+  questions.forEach(q=>catTotal[q.c]++);
+}
+resetScores();
+
+function hideAll(){
+  ["start","quiz","interactive","interactiveResult","result"].forEach(id=>document.getElementById(id).style.display="none");
+}
+function restartAll(){
+  resetScores();
+  resetInteractive();
+  hideAll();
+  document.getElementById("start").style.display="block";
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+function startQuiz(){
+  resetScores();
+  hideAll();
+  document.getElementById("quiz").style.display="block";
+  renderQ();
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+function startQuizFromResult(){ startQuiz(); }
+function renderQ(){
+  answered=false;
+  const q=questions[i];
+  document.getElementById("category").textContent=categories[q.c];
+  document.getElementById("difficulty").textContent=q.d;
+  document.getElementById("question").textContent=q.q;
+  document.getElementById("progressText").textContent=`Вопрос ${i+1} из ${questions.length}`;
+  document.getElementById("scoreText").textContent=`Верных решений: ${score}`;
+  document.getElementById("progressBar").style.width=`${i/questions.length*100}%`;
+  const o=document.getElementById("options");o.innerHTML="";
+  q.a.forEach((t,n)=>{
+    const b=document.createElement("button");
+    b.className="option"; b.textContent=t; b.onclick=()=>choose(n,b); o.appendChild(b);
+  });
+  document.getElementById("review").style.display="none";
+  document.getElementById("nextBtn").style.display="none";
+  document.getElementById("nextBtn").textContent=i===questions.length-1?"Показать результат →":"Дальше →";
+}
+function choose(n,btn){
+  if(answered)return;answered=true;
+  const q=questions[i];
+  const buttons=[...document.querySelectorAll(".option")];
+  buttons.forEach((b,j)=>{b.disabled=true;if(j===q.ok)b.classList.add("correct")});
+  if(n===q.ok){score++;catScore[q.c]++}else btn.classList.add("wrong");
+  document.getElementById("scoreText").textContent=`Верных решений: ${score}`;
+  document.getElementById("correctWhy").textContent=q.why;
+  const wl=document.getElementById("wrongList");wl.innerHTML="";
+  q.wrong.forEach(text=>{
+    const d=document.createElement("div"); d.className="wrongItem"; d.textContent=text; wl.appendChild(d);
+  });
+  document.getElementById("review").style.display="block";
+  document.getElementById("nextBtn").style.display="inline-block";
+  document.getElementById("progressBar").style.width=`${(i+1)/questions.length*100}%`;
+}
+function nextQuestion(){
+  i++;
+  if(i>=questions.length){ showFinalResult(); } else renderQ();
+}
+function showFinalResult(){
+  hideAll();
+  document.getElementById("result").style.display="block";
+  const pct=Math.round(score/questions.length*100);
+  document.getElementById("finalScore").textContent=`${pct}%`;
+  let v,t;
+  if(pct>=90){v="🛡️ Высокая устойчивость";t="Вы хорошо распознаёте социальную инженерию и чаще всего проверяете необычные запросы до действия."}
+  else if(pct>=70){v="✅ Хорошая база";t="Большинство опасных сценариев вы замечаете, но отдельные психологические триггеры всё ещё могут сработать."}
+  else if(pct>=50){v="⚠️ Есть уязвимые привычки";t="Вы знаете основные правила, но иногда доверяете знакомому контексту быстрее, чем проверяете его."}
+  else{v="🚨 Повышенный риск";t="Главная зона роста — не знание терминов, а привычка остановиться и проверить необычный запрос через другой канал."}
+  document.getElementById("verdict").textContent=v;
+  document.getElementById("verdictText").textContent=t;
+
+  const arr=Object.keys(categories).map(k=>({
+    k, p:catTotal[k]?Math.round(catScore[k]/catTotal[k]*100):100
+  })).sort((a,b)=>a.p-b.p);
+  const weak=arr[0],strong=arr[arr.length-1];
+  document.getElementById("weak").textContent=categories[weak.k];
+  document.getElementById("weakText").textContent=`Здесь у вас ${weak.p}% безопасных решений. Именно в этом типе ситуаций полезнее всего добавить обязательную вторую проверку.`;
+  document.getElementById("strong").textContent=categories[strong.k];
+  document.getElementById("strongText").textContent=`Здесь у вас ${strong.p}% безопасных решений. Это хороший шаблон поведения, который стоит переносить на другие ситуации.`;
+
+  const bars=document.getElementById("bars");bars.innerHTML="";
+  arr.forEach(x=>{
+    const row=document.createElement("div");row.className="barRow";
+    row.innerHTML=`<div class="barLabel">${categories[x.k]}</div><div class="barTrack"><div class="barFill" style="width:${x.p}%"></div></div><div class="barPct">${x.p}%</div>`;
+    bars.appendChild(row)
+  });
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+
+/* Interactive */
+const hotspotInfo={
+ sender:{title:"Подозрительный домен",text:"Адрес похож на университетский, но содержит опечатку: univeristy-help.com. Это повод не доверять письму автоматически."},
+ subject:{title:"Давление через срочность",text:"Слово «СРОЧНО» само по себе не доказывает атаку, но часто используется, чтобы человек действовал без проверки."},
+ reauth:{title:"Просьба повторно войти",text:"Неожиданная повторная авторизация после письма — типичная точка кражи логина и пароля."},
+ deadline:{title:"Жёсткий дедлайн",text:"Ограничение «до 18:00 сегодня» усиливает давление и уменьшает время на проверку."},
+ threat:{title:"Угроза потери доступа",text:"Страх блокировки заставляет человека реагировать быстрее и менее критично."},
+ button:{title:"Переход по кнопке",text:"Кнопка скрывает реальный адрес перехода. Безопаснее открыть официальный портал самостоятельно."},
+ oddcontext:{title:"Дополнительный сигнал",text:"Фраза «не отвечайте» не является доказательством атаки, но в сочетании с остальными признаками ещё сильнее подталкивает к действию только через кнопку."}
+};
+const targetKeys=["sender","subject","reauth","deadline","threat","button"];
+let found=new Set();
+
+function resetInteractive(){
+  found=new Set();
+  document.querySelectorAll(".hotspot").forEach(x=>x.classList.remove("found","miss"));
+  const fc=document.getElementById("foundCounter");
+  if(fc)fc.textContent="0 / 6";
+  const f=document.getElementById("findings");
+  if(f)f.innerHTML="";
+  const b=document.getElementById("finishInteractiveBtn");
+  if(b)b.disabled=true;
+}
+function startInteractive(){
+  hideAll();
+  resetInteractive();
+  document.getElementById("interactive").style.display="block";
+  attachHotspots();
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+function attachHotspots(){
+  document.querySelectorAll(".hotspot").forEach(el=>{
+    el.onclick=()=>handleHotspot(el);
+  });
+}
+function handleHotspot(el){
+  const key=el.dataset.key;
+  if(found.has(key))return;
+  const info=hotspotInfo[key];
+  const findings=document.getElementById("findings");
+  const item=document.createElement("div");item.className="finding";
+  if(targetKeys.includes(key)){
+    found.add(key);el.classList.add("found");
+    item.innerHTML=`<b>✓ ${info.title}</b><span>${info.text}</span>`;
+  }else{
+    el.classList.add("miss");
+    item.innerHTML=`<b>Не главный красный флаг</b><span>${info.text}</span>`;
+  }
+  findings.appendChild(item);
+  document.getElementById("foundCounter").textContent=`${[...found].filter(k=>targetKeys.includes(k)).length} / 6`;
+  if(targetKeys.every(k=>found.has(k))){
+    document.getElementById("finishInteractiveBtn").disabled=false;
+  }
+}
+function finishInteractive(){
+  hideAll();
+  document.getElementById("interactiveResult").style.display="block";
+  const count=[...found].filter(k=>targetKeys.includes(k)).length;
+  document.getElementById("interactiveScore").textContent=`${count}/6`;
+  document.getElementById("interactiveVerdict").textContent=count===6?"🔍 Все ключевые признаки найдены":"✅ Хороший разбор";
+  document.getElementById("interactiveText").textContent="Главное здесь — не один подозрительный элемент, а сочетание нескольких сигналов и правильная реакция: выйти из письма и проверить запрос независимо.";
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+</script>
+</body>
+</html>
